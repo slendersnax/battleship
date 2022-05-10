@@ -1,8 +1,13 @@
 #include <SFML/Graphics.hpp>
 #include "Entity.h"
 
+void mainLoop() {
+
+}
+
 int main() {
     sf::RenderWindow window(sf::VideoMode(800, 600), "Shooty Shooty Bang Bang");
+    const int nStandardWidth = 40;
 
     Entity entits(100.f, 100.f, 50, 50, Colour::Blue);
 
