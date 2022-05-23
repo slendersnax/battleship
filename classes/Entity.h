@@ -6,13 +6,14 @@
 
 class Entity {
 	private:
-		double fX, fY;
-		int nWidth, nHeight;
+		int nRow, nCol;
+		int nWidth;
+		bool bShip;
 		Colour colour;
 
-		sf::RectangleShape entity; // entity is a rectangle
+		sf::RectangleShape entity;
 	public:
-		Entity(double _fX, double _fY, int _nWidth, int _nHeight, Colour _colour);
+		Entity(int _nRow, int _nCol, int _nWidth, Colour _colour);
 		void draw(sf::RenderWindow renderWindow);
 		sf::RectangleShape getEntity();
 };

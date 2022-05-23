@@ -1,17 +1,17 @@
-#ifndef LEVEL_H
-#define LEVEL_H
+#ifndef FIELD_H
+#define FIELD_H
 
 #include <vector>
 #include <string>
 #include "Entity.h"
 
-class Level {
+class Field {
 	private:
 		std::vector<Entity> levelEntities;
 
 	public:
-		Level();
-		init(std::string levelName);
+		Field();
+		void init();
 };
 
 #endif

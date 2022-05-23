@@ -1,5 +1,5 @@
 #include <SFML/Graphics.hpp>
-#include "Entity.h"
+#include "classes/Entity.h"
 
 void mainLoop() {
 
@@ -9,7 +9,7 @@ int main() {
     sf::RenderWindow window(sf::VideoMode(800, 600), "Shooty Shooty Bang Bang");
     const int nStandardWidth = 40;
 
-    Entity entits(100.f, 100.f, 50, 50, Colour::Blue);
+    Entity entits(1, 1, 50, Colour::Blue);
 
     while (window.isOpen()) {
         sf::Event event;
