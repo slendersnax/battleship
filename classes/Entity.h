@@ -8,13 +8,15 @@ class Entity {
 	private:
 		int nRow, nCol;
 		int nWidth;
-		bool bShip;
+		bool bHit;
 		Colour colour;
 
 		sf::RectangleShape entity;
 	public:
-		Entity(int _nRow, int _nCol, int _nWidth, Colour _colour);
-		void draw(sf::RenderWindow renderWindow);
+		Entity(int _nRow, int _nCol, int _nWidth, int _nOffsetX, int _nOffsetY, Colour _colour);
+		void setIsHit(bool isHit);
+		bool getIsHit();
+		void setColour(Colour _colour);
 		sf::RectangleShape getEntity();
 };
 

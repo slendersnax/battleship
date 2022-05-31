@@ -3,7 +3,7 @@
 
 #include <SFML/Graphics.hpp>
 
-enum class Colour { White, Black, Red, Green, Blue };
+enum class Colour { White, Black, Grey, Red, Green, Blue };
 
 sf::Color getSzin(Colour colour);
 

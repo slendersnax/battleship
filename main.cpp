@@ -1,26 +1,48 @@
 #include <SFML/Graphics.hpp>
-#include "classes/Entity.h"
+#include "classes/Field.h"
+#include "classes/Ship.h"
 
-void mainLoop() {
-
-}
+enum GameStates { PlayerShipSelection, AdversaryShipSelection, PlayerTurn, AdversaryTurn, GameOver };
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(800, 600), "Shooty Shooty Bang Bang");
-    const int nStandardWidth = 40;
+    // game and entity values
+    const int nWindowWidth = 800, nWindowHeight = 600;
 
-    Entity entits(1, 1, 50, Colour::Blue);
+    const int nStandardWidth = 30;
+    const int nRows = 10, nCols = 10;
+    const int nOffsetX = 50, nOffsetY = 50;
+    
+    // window and entities
+    sf::RenderWindow window(sf::VideoMode(nWindowWidth, nWindowHeight), "BattleShip!");
+    
+    Field player(nRows, nCols, nOffsetX, nOffsetY, nStandardWidth);
+    Field adversary(nRows, nCols, nOffsetX * 3 + nStandardWidth * nCols, nOffsetY, nStandardWidth);
+    
 
+
+    window.setFramerateLimit(60);
+
+    // main loop
     while (window.isOpen()) {
         sf::Event event;
 
         while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed)
+            if (event.type == sf::Event::Closed) {
                 window.close();
+            }
         }
 
+        // drawing
         window.clear();
-        window.draw(entits.getEntity());
+
+        for (int i = 0; i < player.levelEntities.size(); i ++) {
+            window.draw(player.levelEntities[i].getEntity());
+        }
+
+        for (int i = 0; i < adversary.levelEntities.size(); i ++) {
+            window.draw(adversary.levelEntities[i].getEntity());
+        }
+
         window.display();
     }
 

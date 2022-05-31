@@ -2,16 +2,16 @@
 #define FIELD_H
 
 #include <vector>
-#include <string>
 #include "Entity.h"
 
 class Field {
 	private:
-		std::vector<Entity> levelEntities;
+		int nRows, nCols;
 
 	public:
-		Field();
-		void init();
+		std::vector<Entity> levelEntities;
+		Field(int _nRows, int _nCols, int _nOffsetX, int _nOffsetY, int entityWidth);
+		void setShip(int nStartRow, int nStartCol, int nEndRow, int nEndCol);
 };
 
 #endif

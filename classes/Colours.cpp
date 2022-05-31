@@ -8,6 +8,9 @@ sf::Color getSzin(Colour colour) {
 		case Colour::Black:
 			return sf::Color(0, 0, 0);
 			break;
+		case Colour::Grey:
+			return sf::Color(122, 122, 122);
+			break;
 		case Colour::Red:
 			return sf::Color(255, 0, 0);
 			break;
