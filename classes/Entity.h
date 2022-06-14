@@ -17,6 +17,8 @@ class Entity {
 		void setIsHit(bool isHit);
 		bool getIsHit();
 		void setColour(Colour _colour);
+		int getRow();
+		int getCol();
 		sf::RectangleShape getEntity();
 };
 

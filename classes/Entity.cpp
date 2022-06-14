@@ -21,6 +21,14 @@ void Entity::setColour(Colour _colour) {
 	this->entity.setFillColor(getSzin(_colour));
 }
 
+int Entity::getRow() {
+	return this->nRow;
+}
+
+int Entity::getCol() {
+	return this->nCol;
+}
+
 sf::RectangleShape Entity::getEntity() {
 	return this->entity;
 }
