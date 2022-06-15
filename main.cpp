@@ -16,6 +16,7 @@ int main() {
     const int nOffsetX = 50, nOffsetY = 50;
     const int nAdversaryOffsetX = nOffsetX * 3 + nStandardWidth * nCols;
     bool bEventTextUpdated = false;
+    bool bShipsSelected = false;
 
     sf::Font timesNewRoman;
     sf::Text gameStateText;
@@ -118,6 +119,7 @@ int main() {
                     }
                 }
 
+                bShipsSelected = true;
                 gameState = GameState::PlayerTurn;
                 Sleep(1000);
             }
@@ -175,42 +177,48 @@ int main() {
         }
 
         // checking which ships are completely destroyed
+        if (bShipsSelected) {
+            // checking player ships
+            for (int i = 0; i < playerShips.size(); i++) {
+                bool bDestroyed = true;
+                // checking if every part of a ship is hit, if so, it's considered DESTROYED
+                for (int j = 0; j < playerShips[i].getSize(); j++) {
+                    if (!playerShips[i].shipFields[j]->getIsHit()) {
+                        bDestroyed = false;
+                        break;
+                    }
+                }
 
-        // checking player ships
-        for (int i = 0; i < playerShips.size(); i ++) {
-            bool bDestroyed = true;
-            // checking if every part of a ship is hit, if so, it's considered DESTROYED
-            for (int j = 0; j < playerShips[i].getSize(); j ++) {
-                if (!playerShips[i].shipFields[j]->getIsHit()) {
-                    bDestroyed = false;
-                    break;
+                if (bDestroyed) {
+                    playerShips.erase(playerShips.begin() + i);
                 }
             }
 
-            if (bDestroyed) {
-                playerShips.erase(playerShips.begin() + i);
-            }
-        }
-
-        // checking enemy ships
-        for (int i = 0; i < adversaryShips.size(); i++) {
-            bool bDestroyed = true;
-            // checking if every part of a ship is hit, if so, it's considered DESTROYED
-            for (int j = 0; j < adversaryShips[i].getSize(); j++) {
-                if (!adversaryShips[i].shipFields[j]->getIsHit()) {
-                    bDestroyed = false;
-                    break;
+            // checking enemy ships
+            for (int i = 0; i < adversaryShips.size(); i++) {
+                bool bDestroyed = true;
+                // checking if every part of a ship is hit, if so, it's considered DESTROYED
+                for (int j = 0; j < adversaryShips[i].getSize(); j++) {
+                    if (!adversaryShips[i].shipFields[j]->getIsHit()) {
+                        bDestroyed = false;
+                        break;
+                    }
                 }
-            }
 
-            if (bDestroyed) {
-                adversaryShips.erase(adversaryShips.begin() + i);
+                if (bDestroyed) {
+                    adversaryShips.erase(adversaryShips.begin() + i);
+                }
             }
         }
 
         // checking if either the player or enemy has any ships left
         // if one doesn't, the other one wins
 
+        if (playerShips.size() == 0 || adversaryShips.size() == 0) {
+            gameState = GameState::GameOver;
+        }
+        
+        // changing the text to fit the game state
         gameStateText.setString(getGameState(gameState));
 
         // drawing
