@@ -7,8 +7,10 @@ Entity::Entity(int _nRow, int _nCol, int _nWidth, int _nOffsetX, int _nOffsetY, 
 	this->entity.setOutlineColor(getSzin(Colour::Black));
 	this->entity.setOutlineThickness(1.f);
 	this->bHit = false;
+	this->bIsShip = false;
 }
 
+// get-set for hits
 void Entity::setIsHit(bool isHit) {
 	this->bHit = isHit;
 }
@@ -17,10 +19,21 @@ bool Entity::getIsHit() {
 	return this->bHit;
 }
 
+// get-set for ship status
+
+void Entity::setIsShip(bool isShip) {
+	this->bIsShip = isShip;
+}
+
+bool Entity::getIsShip() {
+	return this->bIsShip;
+}
+
 void Entity::setColour(Colour _colour) {
 	this->entity.setFillColor(getSzin(_colour));
 }
 
+// positions
 int Entity::getRow() {
 	return this->nRow;
 }

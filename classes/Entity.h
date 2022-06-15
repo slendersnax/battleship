@@ -9,6 +9,7 @@ class Entity {
 		int nRow, nCol;
 		int nWidth;
 		bool bHit;
+		bool bIsShip;
 		Colour colour;
 
 		sf::RectangleShape entity;
@@ -16,6 +17,8 @@ class Entity {
 		Entity(int _nRow, int _nCol, int _nWidth, int _nOffsetX, int _nOffsetY, Colour _colour);
 		void setIsHit(bool isHit);
 		bool getIsHit();
+		void setIsShip(bool isShip);
+		bool getIsShip();
 		void setColour(Colour _colour);
 		int getRow();
 		int getCol();
