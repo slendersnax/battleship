@@ -174,6 +174,43 @@ int main() {
                 break;
         }
 
+        // checking which ships are completely destroyed
+
+        // checking player ships
+        for (int i = 0; i < playerShips.size(); i ++) {
+            bool bDestroyed = true;
+            // checking if every part of a ship is hit, if so, it's considered DESTROYED
+            for (int j = 0; j < playerShips[i].getSize(); j ++) {
+                if (!playerShips[i].shipFields[j]->getIsHit()) {
+                    bDestroyed = false;
+                    break;
+                }
+            }
+
+            if (bDestroyed) {
+                playerShips.erase(playerShips.begin() + i);
+            }
+        }
+
+        // checking enemy ships
+        for (int i = 0; i < adversaryShips.size(); i++) {
+            bool bDestroyed = true;
+            // checking if every part of a ship is hit, if so, it's considered DESTROYED
+            for (int j = 0; j < adversaryShips[i].getSize(); j++) {
+                if (!adversaryShips[i].shipFields[j]->getIsHit()) {
+                    bDestroyed = false;
+                    break;
+                }
+            }
+
+            if (bDestroyed) {
+                adversaryShips.erase(adversaryShips.begin() + i);
+            }
+        }
+
+        // checking if either the player or enemy has any ships left
+        // if one doesn't, the other one wins
+
         gameStateText.setString(getGameState(gameState));
 
         // drawing
