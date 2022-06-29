@@ -33,6 +33,10 @@ void Entity::setColour(Colour _colour) {
 	this->entity.setFillColor(getSzin(_colour));
 }
 
+Colour Entity::getColour() {
+	return this->colour;
+}
+
 // positions
 int Entity::getRow() {
 	return this->nRow;

@@ -40,6 +40,9 @@ int main() {
     bool bShipsSelected = false;
     bool bDoneShooting = false;
 
+    bool bShipVertical = true;
+    int nCurrentShip = 0;
+
     sf::Font timesNewRoman;
     sf::Text gameStateText;
     std::vector<sf::Text> currentEvents;    // to show what has recently happened
@@ -83,6 +86,8 @@ int main() {
         // event handling
         sf::Event event;
         bool bMousePressed = false;
+        bool bMouseMoved = false;
+        bool bSpacePressed = false;
 
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
@@ -96,48 +101,148 @@ int main() {
                     bMousePressed = true;
                 }
             }
+            if (event.type == sf::Event::MouseMoved) {
+                bMouseMoved = true;
+            }
+            if (event.type == sf::Event::KeyReleased) {
+                if (event.key.code == sf::Keyboard::Space) {
+                    bSpacePressed = true;
+                    bShipVertical = !bShipVertical;
+                }
+            }
         }
 
         // game logic
         switch (gameState) {
             case GameState::PlayerShipSelection: {
-                bool selectionOver = true;
-                int currentShip = -1;
+                bool selectionOver = nCurrentShip < playerShips.size() ? false : true;
 
-                // we look through our ships to see if their positions are all full
-                for (int i = 0; i < playerShips.size(); i++) {
-                    // if one ship still has an empty position, we select that one
-                    if (playerShips[i].shipFields.size() < playerShips[i].getSize()) {
-                        selectionOver = false;
-                        currentShip = i;
+                if (bMouseMoved || bSpacePressed) {
+                    int row = (static_cast<int>(event.mouseMove.y) - nOffsetY) / nStandardWidth;
+                    int col = (static_cast<int>(event.mouseMove.x) - nOffsetX) / nStandardWidth;
 
-                        break;
+                    if (row >= 0 && row < nRows && col >= 0 && col < nCols) {
+                        for (int i = 0; i < nRows; i++) {
+                            for (int j = 0; j < nCols; j++) {
+                                player.levelEntities[i * nRows + j].setColour(player.levelEntities[i * nRows + j].getIsShip() ? Colour::Grey : Colour::Blue);
+                            }
+                        }
+
+                        int startingRow = row < nRows - playerShips[nCurrentShip].getSize() ? row : nRows - playerShips[nCurrentShip].getSize();
+                        int startingCol = col < nCols - playerShips[nCurrentShip].getSize() ? col : nCols - playerShips[nCurrentShip].getSize();
+
+                        if (bShipVertical) {
+                            for (int i = startingRow; i < startingRow + playerShips[nCurrentShip].getSize(); i++) {
+                                player.levelEntities[i * nRows + col].setColour(Colour::Red);
+                            }
+                        }
+                        else {
+                            for (int i = startingCol; i < startingCol + playerShips[nCurrentShip].getSize(); i++) {
+                                player.levelEntities[row * nRows + i].setColour(Colour::Red);
+                            }
+                        }
                     }
                 }
 
                 // this is where the ship's positions are set
                 if (bMousePressed) {
-                    int col = (static_cast<int>(event.mouseButton.x) - nOffsetX) / nStandardWidth;
                     int row = (static_cast<int>(event.mouseButton.y) - nOffsetY) / nStandardWidth;
+                    int col = (static_cast<int>(event.mouseButton.x) - nOffsetX) / nStandardWidth;
+                    
+                    bool bValidSelection = false;
+                    std::string correction;
 
-                    if (row >= 0 && row < nRows && col >= 0 && col < nCols && !player.levelEntities[row * nRows + col].getIsShip()) {
-                        std::cout << "PLAYER SELECTED: " << currentShip << " " << row << ": " << (int)event.mouseButton.y << " - " << nOffsetY << ", " << col << std::endl;
+                    // a metric fuckton of checks
+                    // first if we're withing boundaries
+                    if (row >= 0 && row < nRows && col >= 0 && col < nCols) {
+                        // if we are, if the starting position is not good, we must change it
+                        // this we actually do in the background invisibly
+                        // we must only change the row or column, since the ship is either in a vertical or horizontal position
                         
-                        playerShips[currentShip].shipFields.push_back(&player.levelEntities[row * nRows + col]);
-                        playerShips[currentShip].shipFields.back()->setColour(Colour::Grey);
-                        player.levelEntities[row * nRows + col].setIsShip(true);
+                        // vertically
+                        if (bShipVertical) {
+                            row = row < nRows - playerShips[nCurrentShip].getSize() ? row : nRows - playerShips[nCurrentShip].getSize();
+                        }
+                        // horizontally
+                        else {
+                            col = col < nCols - playerShips[nCurrentShip].getSize() ? col : nCols - playerShips[nCurrentShip].getSize();
+                        }
+
+                        // then we check for intersections
+                        bool bIntersectsShips = false;
+
+                        // vertically
+                        if (bShipVertical) {
+                            for (int i = row; i < row + playerShips[nCurrentShip].getSize(); i++) {
+                                if (player.levelEntities[i * nRows + col].getIsShip()) {
+                                    bIntersectsShips = true;
+                                    break;
+                                }
+                            }
+                        }
+                        // horizontally
+                        else {
+                            for (int i = col; i < col + playerShips[nCurrentShip].getSize(); i++) {
+                                if (player.levelEntities[row * nRows + i].getIsShip()) {
+                                    bIntersectsShips = true;
+                                    break;
+                                }
+                            }
+                        }
+                        // if it doesn't intersect, we're set
+                        if (!bIntersectsShips) {
+                            bValidSelection = true;
+                        }
+                        else {
+                            bValidSelection = false;
+                            correction = "POSITION INTERSECTS ANOTHER SHIP.";
+                        }
                     }
                     else {
-                        std::cout << "INVALID SELECTION. PLEASE SELECT AGAIN" << std::endl;
+                        bValidSelection = false;
+                        correction = "SELECT A POSITION WITHIN BOUNDARIES.";
+                    }
+
+                    if (bValidSelection) {
+                        if (bShipVertical) {
+                            for (int i = row; i < row + playerShips[nCurrentShip].getSize(); i ++) {
+                                std::cout << "PLAYER SELECTED: Ship " << nCurrentShip << ": " << i << " " << col << std::endl;
+
+                                playerShips[nCurrentShip].shipFields.push_back(&player.levelEntities[i * nRows + col]);
+                                playerShips[nCurrentShip].shipFields.back()->setColour(Colour::Grey);
+                                player.levelEntities[i * nRows + col].setIsShip(true);
+                            }
+                        }
+                        else {
+                            for (int i = col; i < col + playerShips[nCurrentShip].getSize(); i ++) {
+                                std::cout << "PLAYER SELECTED: Ship " << nCurrentShip << ": " << row << " " << i << std::endl;
+
+                                playerShips[nCurrentShip].shipFields.push_back(&player.levelEntities[row * nRows + i]);
+                                playerShips[nCurrentShip].shipFields.back()->setColour(Colour::Grey);
+                                player.levelEntities[row * nRows + i].setIsShip(true);
+                            }
+                        }
+
+                        nCurrentShip ++;
+                    }
+                    else {
+                        std::cout << "INVALID SELECTION. " << correction << std::endl;
                     }
                 }
 
                 if (selectionOver) {
+                    for (int i = 0; i < nRows; i++) {
+                        for (int j = 0; j < nCols; j++) {
+                            player.levelEntities[i * nRows + j].setColour(player.levelEntities[i * nRows + j].getIsShip() ? Colour::Grey : Colour::Blue);
+                        }
+                    }
+
                     gameState = GameState::AdversaryShipSelection;
                 }
             }
                 break;
             case GameState::AdversaryShipSelection: {
+                // to do: smarter shelling
                 for (int i = 0; i < adversaryShips.size(); i ++) {
                     int row;
                     int col;
@@ -148,11 +253,11 @@ int main() {
                         col = rand() % (nCols - adversaryShips[i].getSize());
                     } while (checkAreaHasShip(adversary, adversaryShips[i].getSize(), row, col, direction, nRows, nCols));
 
+                    // setting the direction of the enemy's ships
                     // 1 is horizontal
                     if (direction) {
                         for (int j = col; j < col + adversaryShips[i].getSize(); j ++) {
                             adversaryShips[i].shipFields.push_back(&adversary.levelEntities[row * nRows + j]);
-                            //adversaryShips[i].shipFields.back()->setColour(Colour::Green);
                             adversary.levelEntities[row * nRows + j].setIsShip(true);
                         }
                     }
@@ -160,7 +265,6 @@ int main() {
                     else {
                         for (int j = row; j < row + adversaryShips[i].getSize(); j ++) {
                             adversaryShips[i].shipFields.push_back(&adversary.levelEntities[j * nRows + col]);
-                            //adversaryShips[i].shipFields.back()->setColour(Colour::Green);
                             adversary.levelEntities[j * nRows + col].setIsShip(true);
                         }
                     }
@@ -172,14 +276,19 @@ int main() {
             }
                 break;
             case GameState::PlayerTurn:
+                // maybe later
+                if (bMouseMoved) {
+                    int row = (static_cast<int>(event.mouseMove.y) - nOffsetY) / nStandardWidth;
+                    int col = (static_cast<int>(event.mouseMove.x) - nAdversaryOffsetX) / nStandardWidth;
+                }
                 if (bMousePressed) {
-                    int col = ((int)event.mouseButton.x - nAdversaryOffsetX) / nStandardWidth;
                     int row = ((int)event.mouseButton.y - nOffsetY) / nStandardWidth;
+                    int col = ((int)event.mouseButton.x - nAdversaryOffsetX) / nStandardWidth;
                     
                     // here we check if our shot hit an enemy ship or not
                     // could be a bit fine-tuned
                     if (row >= 0 && row < nRows && col >= 0 && col < nCols) {
-                        std::cout << "PLAYER SHOT: " << row << ": " << (int)event.mouseButton.y << " - " << nOffsetY << ", " << col << std::endl;
+                        std::cout << "PLAYER SHOT: " << row << " " << col << std::endl;
                         
                         if (!adversary.levelEntities[row * nRows + col].getIsHit()) {
                             std::cout << "PLAYER HIT: " << row << " " << col << std::endl;

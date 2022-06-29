@@ -20,6 +20,7 @@ class Entity {
 		void setIsShip(bool isShip);
 		bool getIsShip();
 		void setColour(Colour _colour);
+		Colour getColour();
 		int getRow();
 		int getCol();
 		sf::RectangleShape getEntity();
