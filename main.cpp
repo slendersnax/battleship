@@ -42,6 +42,7 @@ int main() {
 
     bool bShipVertical = true;
     int nCurrentShip = 0;
+    int nLastRow, nLastCol;
 
     sf::Font timesNewRoman;
     sf::Text gameStateText;
@@ -118,6 +119,9 @@ int main() {
                 bool selectionOver = nCurrentShip < playerShips.size() ? false : true;
 
                 if (bMouseMoved || bSpacePressed) {
+                    // when we check for space pressed we DON'T HAVE A MOUSE MOVE POSITION SO 
+                    // IT CAN'T RENDER IT
+                    // STUPID
                     int row = (static_cast<int>(event.mouseMove.y) - nOffsetY) / nStandardWidth;
                     int col = (static_cast<int>(event.mouseMove.x) - nOffsetX) / nStandardWidth;
 
