@@ -4,7 +4,7 @@
 #include "classes/GameStates.h"
 #include <iostream>
 #include <time.h>
-#include <Windows.h>
+#include <unistd.h>
 
 bool checkAreaHasShip(Field adversary, int size,  int row, int col, int direction, int nRows, int nCols) {
     // check horizontally
@@ -247,7 +247,7 @@ int main() {
                 break;
             case GameState::AdversaryShipSelection: {
                 // to do: smarter shelling
-                for (int i = 0; i < adversaryShips.size(); i ++) {
+                for (unsigned int i = 0; i < adversaryShips.size(); i ++) {
                     int row;
                     int col;
                     int direction = rand() % 2;
@@ -276,7 +276,7 @@ int main() {
 
                 bShipsSelected = true;
                 gameState = GameState::PlayerTurn;
-                Sleep(1000);
+                usleep(1000);
             }
                 break;
             case GameState::PlayerTurn:
@@ -332,7 +332,7 @@ int main() {
                         player.levelEntities[row * nRows + col].setColour(Colour::White);
                     }
                     
-                    Sleep(1000);
+                    usleep(1000);
 
                     gameState = GameState::PlayerTurn;
                 }
@@ -345,7 +345,7 @@ int main() {
         // checking which ships are completely destroyed
         if (bShipsSelected) {
             // checking player ships
-            for (int i = 0; i < playerShips.size(); i++) {
+            for (unsigned int i = 0; i < playerShips.size(); i++) {
                 bool bDestroyed = true;
                 // checking if every part of a ship is hit, if so, it's considered DESTROYED
                 for (int j = 0; j < playerShips[i].getSize(); j++) {
@@ -361,7 +361,7 @@ int main() {
             }
 
             // checking enemy ships
-            for (int i = 0; i < adversaryShips.size(); i++) {
+            for (unsigned int i = 0; i < adversaryShips.size(); i++) {
                 bool bDestroyed = true;
                 // checking if every part of a ship is hit, if so, it's considered DESTROYED
                 for (int j = 0; j < adversaryShips[i].getSize(); j++) {
@@ -390,11 +390,11 @@ int main() {
         // drawing
         window.clear();
 
-        for (int i = 0; i < player.levelEntities.size(); i ++) {
+        for (unsigned int i = 0; i < player.levelEntities.size(); i ++) {
             window.draw(player.levelEntities[i].getEntity());
         }
 
-        for (int i = 0; i < adversary.levelEntities.size(); i ++) {
+        for (unsigned int i = 0; i < adversary.levelEntities.size(); i ++) {
             window.draw(adversary.levelEntities[i].getEntity());
         }
 

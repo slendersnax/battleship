@@ -3,3 +3,5 @@
 *.vcxproj*
 doc.odt
 /x64
+bin/*
+*.o
