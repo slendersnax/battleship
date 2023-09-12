@@ -4,6 +4,7 @@
 #include "classes/GameStates.h"
 #include <iostream>
 #include <time.h>
+#include <deque>
 #include <unistd.h>
 
 bool checkAreaHasShip(Field adversary, int size,  int row, int col, int direction, int nRows, int nCols) {
@@ -27,6 +28,30 @@ bool checkAreaHasShip(Field adversary, int size,  int row, int col, int directio
     return false;
 }
 
+void moveCurrentEventsBack(std::deque<sf::Text>& currentEvents, const int nMaxEvents) {
+    for(int i = 0; i < nMaxEvents - 1; i ++) {
+        currentEvents[i].setString(currentEvents[i + 1].getString());
+    }
+}
+
+void emptyCurrentEvents(std::deque<sf::Text>& currentEvents, const int nMaxEvents, int& nEvents) {
+    for(int i = 0; i < nMaxEvents; i ++) {
+        currentEvents[i].setString("");
+    }
+
+    nEvents = 0;
+}
+
+void updateCurrentEvents(std::deque<sf::Text>& currentEvents, const int nMaxEvents, int& nEvents, std::string sMessage) {
+    if(nEvents >= nMaxEvents) {
+        moveCurrentEventsBack(currentEvents, nMaxEvents);
+        nEvents = nMaxEvents - 1;
+    }
+
+    currentEvents[nEvents].setString(sMessage);
+    nEvents ++;
+}
+
 int main() {
     srand(time(NULL));
     // game and entity values
@@ -36,28 +61,40 @@ int main() {
     const int nRows = nWindowWidth / 80, nCols = nWindowWidth / 80;
     const int nOffsetX = nWindowWidth / 16, nOffsetY = 50;
     const int nAdversaryOffsetX = nOffsetX * 3 + nStandardWidth * nCols;
-    bool bEventTextUpdated = false;
     bool bShipsSelected = false;
-    bool bDoneShooting = false;
 
     bool bShipVertical = true;
     int nCurrentShip = 0;
-    int nLastRow, nLastCol;
+
+    bool bMouseLeftReleased = false;
+    bool bMouseRightReleased = false;
+    bool bMouseMoved = false;
 
     sf::Font timesNewRoman;
     sf::Text gameStateText;
-    std::vector<sf::Text> currentEvents;    // to show what has recently happened
+    const int nMaxEvents = 5;
+    int nEvents = 0;
+    std::deque<sf::Text> currentEvents(5); // to show what has recently happened
     GameState gameState;
     sf::RenderWindow window(sf::VideoMode(nWindowWidth, nWindowHeight), "BattleShip!");
 
     if (!timesNewRoman.loadFromFile("times-new-roman.ttf")) {
-        std::cout << "font loading error" << std::endl;
+        std::cerr << "Couldn't load font." << std::endl;
+        exit(1);
     }
 
     gameStateText.setFont(timesNewRoman);
     gameStateText.setFillColor(getSzin(Colour::White));
     gameStateText.setCharacterSize(nStandardWidth * 0.8f);
     gameStateText.setPosition(nOffsetX, nOffsetY / 4);
+
+    for(int i = 0; i < nMaxEvents; i ++) {
+        currentEvents[i].setFont(timesNewRoman);
+        currentEvents[i].setFillColor(getSzin(Colour::White));
+        currentEvents[i].setCharacterSize(nStandardWidth * 0.7f);
+        currentEvents[i].setPosition(nOffsetX, 510 + i * 30);
+        currentEvents[i].setString("");
+    }
 
     gameState = GameState::PlayerShipSelection;
     
@@ -86,9 +123,9 @@ int main() {
     while (window.isOpen()) {
         // event handling
         sf::Event event;
-        bool bMousePressed = false;
-        bool bMouseMoved = false;
-        bool bSpacePressed = false;
+        bMouseLeftReleased = false;
+        bMouseRightReleased = false;
+        bMouseMoved = false;
 
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
@@ -97,19 +134,17 @@ int main() {
 
             // note! if you press the mouse while moving it it may not work
             // problem with SFML?
-            if (event.type == sf::Event::MouseButtonPressed) {
+            if (event.type == sf::Event::MouseButtonReleased) {
                 if (event.mouseButton.button == sf::Mouse::Left) {
-                    bMousePressed = true;
+                    bMouseLeftReleased = true;
+                }
+                else if (event.mouseButton.button == sf::Mouse::Right) {
+                    bMouseRightReleased = true;
+                    bShipVertical = !bShipVertical;
                 }
             }
             if (event.type == sf::Event::MouseMoved) {
                 bMouseMoved = true;
-            }
-            if (event.type == sf::Event::KeyReleased) {
-                if (event.key.code == sf::Keyboard::Space) {
-                    bSpacePressed = true;
-                    bShipVertical = !bShipVertical;
-                }
             }
         }
 
@@ -118,12 +153,21 @@ int main() {
             case GameState::PlayerShipSelection: {
                 bool selectionOver = nCurrentShip < playerShips.size() ? false : true;
 
-                if (bMouseMoved || bSpacePressed) {
-                    // when we check for space pressed we DON'T HAVE A MOUSE MOVE POSITION SO 
-                    // IT CAN'T RENDER IT
-                    // STUPID
-                    int row = (static_cast<int>(event.mouseMove.y) - nOffsetY) / nStandardWidth;
-                    int col = (static_cast<int>(event.mouseMove.x) - nOffsetX) / nStandardWidth;
+                // we re-render things if the mouse has moved or if the ship's direction has changed (right click release)
+                if (bMouseMoved || bMouseRightReleased) {
+                    int mouseX, mouseY;
+                    
+                    if(bMouseMoved) {
+                        mouseX = static_cast<int>(event.mouseMove.x);
+                        mouseY = static_cast<int>(event.mouseMove.y);
+                    }
+                    else {
+                        mouseX = static_cast<int>(event.mouseButton.x);
+                        mouseY = static_cast<int>(event.mouseButton.y);
+                    }
+
+                    int row = (mouseY - nOffsetY) / nStandardWidth;
+                    int col = (mouseX - nOffsetX) / nStandardWidth;
 
                     if (row >= 0 && row < nRows && col >= 0 && col < nCols) {
                         for (int i = 0; i < nRows; i++) {
@@ -149,12 +193,13 @@ int main() {
                 }
 
                 // this is where the ship's positions are set
-                if (bMousePressed) {
+                if (bMouseLeftReleased) {
                     int row = (static_cast<int>(event.mouseButton.y) - nOffsetY) / nStandardWidth;
                     int col = (static_cast<int>(event.mouseButton.x) - nOffsetX) / nStandardWidth;
                     
                     bool bValidSelection = false;
-                    std::string correction;
+                    std::string sCorrection = "";
+                    std::string sMessage = "";
 
                     // a metric fuckton of checks
                     // first if we're withing boundaries
@@ -199,19 +244,19 @@ int main() {
                         }
                         else {
                             bValidSelection = false;
-                            correction = "POSITION INTERSECTS ANOTHER SHIP.";
+                            sCorrection = "POSITION INTERSECTS WITH ANOTHER SHIP.";
                         }
                     }
                     else {
                         bValidSelection = false;
-                        correction = "SELECT A POSITION WITHIN BOUNDARIES.";
+                        sCorrection = "SELECT A POSITION WITHIN BOUNDARIES.";
                     }
 
                     if (bValidSelection) {
+                        sMessage = "Player has selected position for ship " + std::to_string(nCurrentShip + 1);
                         if (bShipVertical) {
                             for (int i = row; i < row + playerShips[nCurrentShip].getSize(); i ++) {
                                 std::cout << "PLAYER SELECTED: Ship " << nCurrentShip << ": " << i << " " << col << std::endl;
-
                                 playerShips[nCurrentShip].shipFields.push_back(&player.levelEntities[i * nRows + col]);
                                 playerShips[nCurrentShip].shipFields.back()->setColour(Colour::Grey);
                                 player.levelEntities[i * nRows + col].setIsShip(true);
@@ -230,8 +275,10 @@ int main() {
                         nCurrentShip ++;
                     }
                     else {
-                        std::cout << "INVALID SELECTION. " << correction << std::endl;
+                        sMessage = "INVALID SELECTION. " + sCorrection;
                     }
+
+                    updateCurrentEvents(currentEvents, nMaxEvents, nEvents, sMessage);
                 }
 
                 if (selectionOver) {
@@ -242,11 +289,12 @@ int main() {
                     }
 
                     gameState = GameState::AdversaryShipSelection;
+                    emptyCurrentEvents(currentEvents, nMaxEvents, nEvents);
+                    updateCurrentEvents(currentEvents, nMaxEvents, nEvents, "Player has selected ship positions.");
                 }
             }
                 break;
             case GameState::AdversaryShipSelection: {
-                // to do: smarter shelling
                 for (unsigned int i = 0; i < adversaryShips.size(); i ++) {
                     int row;
                     int col;
@@ -274,66 +322,83 @@ int main() {
                     }
                 }
 
+
                 bShipsSelected = true;
-                gameState = GameState::PlayerTurn;
+                
+                std::cout << std::flush;
                 usleep(1000);
+
+                updateCurrentEvents(currentEvents, nMaxEvents, nEvents, "Adversary has selected ship positions.");
+                gameState = GameState::PlayerTurn;
             }
                 break;
             case GameState::PlayerTurn:
-                // maybe later
-                if (bMouseMoved) {
-                    int row = (static_cast<int>(event.mouseMove.y) - nOffsetY) / nStandardWidth;
-                    int col = (static_cast<int>(event.mouseMove.x) - nAdversaryOffsetX) / nStandardWidth;
-                }
-                if (bMousePressed) {
+                if (bMouseLeftReleased) {
                     int row = ((int)event.mouseButton.y - nOffsetY) / nStandardWidth;
                     int col = ((int)event.mouseButton.x - nAdversaryOffsetX) / nStandardWidth;
+                    std::string sMessage = "";
+                    bool bHitSomething = false;
                     
                     // here we check if our shot hit an enemy ship or not
                     // could be a bit fine-tuned
                     if (row >= 0 && row < nRows && col >= 0 && col < nCols) {
                         std::cout << "PLAYER SHOT: " << row << " " << col << std::endl;
+                        sMessage = "Player shot: " + std::to_string(row) + " " + std::to_string(col);
                         
                         if (!adversary.levelEntities[row * nRows + col].getIsHit()) {
                             std::cout << "PLAYER HIT: " << row << " " << col << std::endl;
                             adversary.levelEntities[row * nRows + col].setIsHit(true);
-                            gameState = GameState::AdversaryTurn;
+                            bHitSomething = true;
                         }
                         else {
                             std::cout << "POSITION ALREADY SHOT PREVIOUSLY. SHOOT AGAIN" << std::endl;
+                            sMessage = "POSITION ALREADY SHOT PREVIOUSLY. SHOOT AGAIN";
                         }
                         
                         if (adversary.levelEntities[row * nRows + col].getIsShip()) {
                             adversary.levelEntities[row * nRows + col].setColour(Colour::Red);
                         }
                         else {
-                            adversary.levelEntities[row * nRows + col].setColour(Colour::White);
+                            adversary.levelEntities[row * nRows + col].setColour(Colour::DarkBlue);
                         }
                     }
                     else {
                         std::cout << "INVALID SHOT POSITION. PLEASE SHOOT AGAIN" << std::endl;
+                        sMessage = "INVALID SHOT POSITION. PLEASE SHOOT AGAIN";
+                    }
+
+                    updateCurrentEvents(currentEvents, nMaxEvents, nEvents, sMessage);
+
+                    if(bHitSomething) {
+                        gameState = GameState::AdversaryTurn;
                     }
                 }
 
                 break;
             case GameState::AdversaryTurn: {
+                // we're not checking if the place where the adversary shot has already been shot
+                // to do: smarter shelling
                 int row = rand() % nRows;
                 int col = rand() % nCols;
+                std::string sMessage;
                 
                 if (!player.levelEntities[row * nRows + col].getIsHit()) {
                     player.levelEntities[row * nRows + col].setIsHit(true);
                     std::cout << "ENEMY SHOT: " << row << " " << col << std::endl;
+                    sMessage = "Enemy shot: " + std::to_string(row) + " " + std::to_string(col);
 
                     if (player.levelEntities[row * nRows + col].getIsShip()) {
                         std::cout << "ENEMY HIT: " << row << " " << col << std::endl;
                         player.levelEntities[row * nRows + col].setColour(Colour::Red);
                     }
                     else {
-                        player.levelEntities[row * nRows + col].setColour(Colour::White);
+                        player.levelEntities[row * nRows + col].setColour(Colour::DarkBlue);
                     }
                     
+                    std::cout << std::flush;
                     usleep(1000);
 
+                    updateCurrentEvents(currentEvents, nMaxEvents, nEvents, sMessage);
                     gameState = GameState::PlayerTurn;
                 }
             }
@@ -382,6 +447,13 @@ int main() {
 
         if (playerShips.size() == 0 || adversaryShips.size() == 0) {
             gameState = GameState::GameOver;
+            
+            if(playerShips.size() == 0) {
+                updateCurrentEvents(currentEvents, nMaxEvents, nEvents, "Player lost!");
+            }
+            else {
+                updateCurrentEvents(currentEvents, nMaxEvents, nEvents, "Player won!");
+            }
         }
         
         // changing the text to fit the game state
@@ -399,6 +471,10 @@ int main() {
         }
 
         window.draw(gameStateText);
+
+        for(int i = 0; i < nMaxEvents; i ++) {
+            window.draw(currentEvents[i]);
+        }
 
         window.display();
     }

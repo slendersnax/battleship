@@ -18,7 +18,7 @@ std::string getGameState(GameState state) {
 			return "Game Over";
 			break;
 		default:
-			return "what";
+			return "what?? this isn't supposed to happen!";
 			break;
 	}
 }
