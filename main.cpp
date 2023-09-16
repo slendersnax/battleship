@@ -4,22 +4,21 @@
 #include "classes/GameStates.h"
 #include <iostream>
 #include <time.h>
-#include <deque>
 #include <unistd.h>
 
-bool checkAreaHasShip(Field adversary, int size,  int row, int col, int direction, int nRows, int nCols) {
+bool checkAreaHasShip(Field adversary, int size,  int row, int col, int direction, int nCols) {
     // check horizontally
     if (direction) {
         for (int i = col; i < size; i ++) {
-            if (adversary.levelEntities[row * nRows + i].getIsShip()) {
+            if (adversary.levelEntities[row * nCols + i].getIsShip()) {
                 return true;
             }
         }
     }
     // check vertically
     else {
-        for (int i = row; i < size; i++) {
-            if (adversary.levelEntities[i * nRows + col].getIsShip()) {
+        for (int i = row; i < size; i ++) {
+            if (adversary.levelEntities[i * nCols + col].getIsShip()) {
                 return true;
             }
         }
@@ -28,13 +27,14 @@ bool checkAreaHasShip(Field adversary, int size,  int row, int col, int directio
     return false;
 }
 
-void moveCurrentEventsBack(std::deque<sf::Text>& currentEvents, const int nMaxEvents) {
+// create a separate class for current Events?
+void moveCurrentEventsBack(std::vector<sf::Text>& currentEvents, const int nMaxEvents) {
     for(int i = 0; i < nMaxEvents - 1; i ++) {
         currentEvents[i].setString(currentEvents[i + 1].getString());
     }
 }
 
-void emptyCurrentEvents(std::deque<sf::Text>& currentEvents, const int nMaxEvents, int& nEvents) {
+void emptyCurrentEvents(std::vector<sf::Text>& currentEvents, const int nMaxEvents, int& nEvents) {
     for(int i = 0; i < nMaxEvents; i ++) {
         currentEvents[i].setString("");
     }
@@ -42,7 +42,7 @@ void emptyCurrentEvents(std::deque<sf::Text>& currentEvents, const int nMaxEvent
     nEvents = 0;
 }
 
-void updateCurrentEvents(std::deque<sf::Text>& currentEvents, const int nMaxEvents, int& nEvents, std::string sMessage) {
+void updateCurrentEvents(std::vector<sf::Text>& currentEvents, const int nMaxEvents, int& nEvents, std::string sMessage) {
     if(nEvents >= nMaxEvents) {
         moveCurrentEventsBack(currentEvents, nMaxEvents);
         nEvents = nMaxEvents - 1;
@@ -50,6 +50,20 @@ void updateCurrentEvents(std::deque<sf::Text>& currentEvents, const int nMaxEven
 
     currentEvents[nEvents].setString(sMessage);
     nEvents ++;
+}
+
+// choosing a field for the adversary to shoot
+int playerAreaToShoot(std::vector<int>& viableAreas) {
+    int iArea, areaToShoot; // inde of Area
+
+    // v1: random
+
+    iArea = rand() % viableAreas.size();
+    areaToShoot = viableAreas[iArea];
+
+    viableAreas.erase(viableAreas.begin() + iArea);
+
+    return areaToShoot;
 }
 
 int main() {
@@ -74,7 +88,7 @@ int main() {
     sf::Text gameStateText;
     const int nMaxEvents = 5;
     int nEvents = 0;
-    std::deque<sf::Text> currentEvents(5); // to show what has recently happened
+    std::vector<sf::Text> currentEvents(5); // to show what has recently happened
     GameState gameState;
     sf::RenderWindow window(sf::VideoMode(nWindowWidth, nWindowHeight), "BattleShip!");
 
@@ -107,6 +121,8 @@ int main() {
     std::vector<Ship> playerShips;
     std::vector<Ship> adversaryShips;
 
+    std::vector<int> playerShootableAreas(player.levelEntities.size());
+
     playerShips.push_back(Ship(1, 2));
     playerShips.push_back(Ship(2, 3));
     playerShips.push_back(Ship(3, 5));
@@ -118,6 +134,13 @@ int main() {
     adversaryShips.push_back(Ship(8, 5));
     adversaryShips.push_back(Ship(9, 3));
     adversaryShips.push_back(Ship(10, 4));
+
+    // this is all the areas that the enemy will be able to shoot
+    // we will further filter these based on a few criteria
+    // see playerAreaToShoot()
+    for (unsigned int i = 0; i < player.levelEntities.size(); i ++) {
+        playerShootableAreas[i] = i;
+    }
 
     // main loop
     while (window.isOpen()) {
@@ -303,7 +326,7 @@ int main() {
                     do {
                         row = rand() % (nRows - adversaryShips[i].getSize());
                         col = rand() % (nCols - adversaryShips[i].getSize());
-                    } while (checkAreaHasShip(adversary, adversaryShips[i].getSize(), row, col, direction, nRows, nCols));
+                    } while (checkAreaHasShip(adversary, adversaryShips[i].getSize(), row, col, direction, nCols)); // potential bug here? ships sometimes overlap
 
                     // setting the direction of the enemy's ships
                     // 1 is horizontal
@@ -376,23 +399,22 @@ int main() {
 
                 break;
             case GameState::AdversaryTurn: {
-                // we're not checking if the place where the adversary shot has already been shot
-                // to do: smarter shelling
-                int row = rand() % nRows;
-                int col = rand() % nCols;
+                int positionToShoot = playerAreaToShoot(playerShootableAreas);
+                int row = (positionToShoot / nCols) + 1;
+                int col = (positionToShoot % nCols) + 1;
                 std::string sMessage;
                 
-                if (!player.levelEntities[row * nRows + col].getIsHit()) {
-                    player.levelEntities[row * nRows + col].setIsHit(true);
-                    std::cout << "ENEMY SHOT: " << row << " " << col << std::endl;
+                if (!player.levelEntities[positionToShoot].getIsHit()) {
+                    player.levelEntities[positionToShoot].setIsHit(true);
+                    std::cout << "ENEMY SHOT: " << positionToShoot << " rc: " << row << " " << col << std::endl;
                     sMessage = "Enemy shot: " + std::to_string(row) + " " + std::to_string(col);
 
-                    if (player.levelEntities[row * nRows + col].getIsShip()) {
+                    if (player.levelEntities[positionToShoot].getIsShip()) {
                         std::cout << "ENEMY HIT: " << row << " " << col << std::endl;
-                        player.levelEntities[row * nRows + col].setColour(Colour::Red);
+                        player.levelEntities[positionToShoot].setColour(Colour::Red);
                     }
                     else {
-                        player.levelEntities[row * nRows + col].setColour(Colour::DarkBlue);
+                        player.levelEntities[positionToShoot].setColour(Colour::DarkBlue);
                     }
                     
                     std::cout << std::flush;
