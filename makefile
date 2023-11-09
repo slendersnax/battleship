@@ -7,6 +7,7 @@ battle_files = main.o classes/Ship.o classes/Field.o classes/Entity.o classes/Co
 .PHONY: classes clean
 
 battleship: classes main.o
+	mkdir -p bin
 	$(cxx) $(battle_files) -o bin/battleship -L $(sfml_lib) $(included_libs)
 
 main.o: classes main.cpp
