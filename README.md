@@ -4,4 +4,12 @@ An implementation of the Battleship game using C++ and the SFML library
 
 ### build
 
-This program uses the `make` utility, so use a `make` command in the project's root folder.
+So far it has only been tested on Arch Linux.
+
+It's made using C++ and SFML and built using the `make` utility, so on Arch you have to install the `sfml` and `make` packages.
+
+### todo
+
+- [ ] clean up code
+- [ ] make Linux distro agnostic build
+- [ ] make Windows build
